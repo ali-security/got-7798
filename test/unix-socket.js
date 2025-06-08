@@ -15,6 +15,17 @@ test.before('setup', async () => {
 		res.end('ok');
 	});
 
+	s.on('/foo', (req, res) => {
+		res.writeHead(302, {
+			location: '/bar'
+		});
+		res.end();
+	});
+
+	s.on('/bar', (req, res) => {
+		res.end('ok');
+	});
+
 	await s.listen(socketPath);
 });
 
@@ -25,6 +36,11 @@ test('works', async t => {
 
 test('protocol-less works', async t => {
 	const url = format('unix:%s:%s', socketPath, '/');
+	t.is((await got(url)).body, 'ok');
+});
+
+test('redirects work', async t => {
+	const url = format('http://unix:%s:%s', socketPath, '/foo');
 	t.is((await got(url)).body, 'ok');
 });
 

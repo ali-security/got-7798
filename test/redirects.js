@@ -92,8 +92,40 @@ test.before('setup', async () => {
 		res.end();
 	});
 
+	http.on('/protocol', (req, res) => {
+		res.writeHead(302, {
+			location: 'unix:/var/run/docker.sock:/containers/json'
+		});
+		res.end();
+	});
+
+	http.on('/hostname', (req, res) => {
+		res.writeHead(302, {
+			location: 'http://unix:/var/run/docker.sock:/containers/json'
+		});
+		res.end();
+	});
+
 	await http.listen(http.port);
 	await https.listen(https.port);
+});
+
+test('cannot redirect to unix protocol', async t => {
+	try {
+		await got(`${http.url}/protocol`);
+		t.fail('Exception was not thrown');
+	} catch (err) {
+		t.is(err.message, 'Cannot redirect to UNIX socket');
+	}
+});
+
+test('cannot redirect to unix protocol2', async t => {
+	try {
+		await got(`${http.url}/hostname`);
+		t.fail('Exception was not thrown');
+	} catch (err) {
+		t.is(err.message, 'Cannot redirect to UNIX socket');
+	}
 });
 
 test('follows redirect', async t => {

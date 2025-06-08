@@ -18,6 +18,10 @@ const isRetryAllowed = require('is-retry-allowed');
 const Buffer = require('safe-buffer').Buffer;
 const pkg = require('./package');
 
+function isUnixSocketURL(opts) {
+	return opts.protocol === 'unix:' || opts.hostname === 'unix';
+}
+
 function requestAsEventEmitter(opts) {
 	opts = opts || {};
 
@@ -45,6 +49,12 @@ function requestAsEventEmitter(opts) {
 
 				redirectUrl = urlLib.resolve(urlLib.format(opts), bufferString);
 				const redirectOpts = Object.assign({}, opts, urlLib.parse(redirectUrl));
+				if (!isUnixSocketURL(opts) && isUnixSocketURL(redirectOpts)) {
+					const err = new got.RequestError({}, opts);
+					err.message = 'Cannot redirect to UNIX socket';
+					ee.emit('error', err);
+					return;
+				}
 
 				ee.emit('redirect', res, redirectOpts);
 
